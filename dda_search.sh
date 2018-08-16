@@ -36,25 +36,155 @@ gunzip *.mzXML.gz
 
 for id in ${IDs}
 do
-  file=`ls ~/mysonas/html/openBIS/${id}/heuselm*.mzXML.gz`
-  name=${file##*/}
-  bsub -R "rusage[mem=20000,scratch=20000]" -J "comet" comet -PHeLa_protgen_combined_1FPKM_reverse_comet.params -N${name%.*}_FPKM1 ${file}
+  dir=~/mysonas/html/openBIS/${id}/
+  rm -R ${dir}
 done
 
-bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM" -w "done(comet)" xinteract -dreverse_ -OARPd -Ninteract_1FPKM heuselm*_FPKM1.pep.xml
-bsub -R "rusage[mem=200000,scratch=200000]" -J "iprophet_1FPKM" -w "done(xinteract_1FPKM)" InterProphetParser DECOY=reverse_ *interact_1FPKM.pep.xml iprophet_1FPKM.pep.xml
+# run comet search
+for file in *mzXML
+do
+  #file=`ls ~/mysonas/html/openBIS/${id}/heuselm*.mzXML.gz`
+  name=${file##*/}
+  bsub -R "rusage[mem=200000,scratch=200000]" -J "comet" comet -PHeLa_protgen_combined_1FPKM_reverse_comet.params -N${name%.*}.comet ${file}
+done
 
-# peptide prophet
-# 0.0100	0.8147	775297
+# run Xtandem search
+for i in *mzXML
+do
+  echo $i
+  j=$(basename $i .mzXML)
+  echo $j
+  cp input_HeLaprotgen_5600_native_semi.xml $j.tandem.params
+  sed -i -e "s/input_file_name/$i/g" $j.tandem.params
+  sed -i -e "s/output_file_name/$j.tandem.xml/g" $j.tandem.params
+  bsub -R "rusage[mem=20000,scratch=20000]" -J "xtandem" -n 16 tandem $j.tandem.params
+done
 
-# spectrast
-bsub -R "rusage[mem=200000,scratch=200000]" -J spectrast_irt spectrast -cNSpecLib -cf "Protein! ~ reverse_" -cP0.8147 -c_IRTirtkit.txt -c_IRR iprophet_1FPKM.pep.xml
-bsub -R "rusage[mem=40000,scratch=40000]" -w "done(spectrast_irt)" -J spectrast_cons spectrast -cNSpecLib_cons_all -cAC SpecLib.splib
+#convert 2 pepxml
+for i in *mzXML
+do
+  echo $i
+  j=$(basename $i .mzXML)
+  echo $j
+  bsub  -R "rusage[mem=20000,scratch=20000]" -J "xtrandem_convert" -w "done(xtandem)" Tandem2XML $j.tandem.xml $j.tandem.pep.xml
+done
 
-bsub -R "rusage[mem=40000,scratch=40000]" -J spectrast2tsv -w "done(spectrast_cons)" spectrast2tsv.py -l 350,2000 -s b,y -x 1,2 -o 6 -n 6 -p 0.05 -d -e -w swath64_noheader.txt -k openswath -a SpecLib_cons_openswath.tsv SpecLib_cons_all.sptxt
+### MSfragger doesn't work on our in-house converted files
+### Effort of converting raw files again not worth it
+### Wenguang suggested to use OMSSA instead >> even more complementary to comet
+## msconvert
+#for i in *mzXML
+#do
+##msconvert --mzXML --outfile $(basename $i .mzXML)_msconvert  $i
+#msconvert $i
+#done
+## run MSfragger
+#for i in *.mzML
+#do
+#bsub -J "msfragger" -R "rusage[mem=200000,scratch=200000]" java -Xmx8G -jar ~/mysonas/MSFragger-20171106/MSFragger-20180316.jar fragger_HeLaProtgen.params $i
+#done
 
-bsub -R "rusage[mem=40000,scratch=40000]" -w "done(spectrast2tsv)" -J toTraML TargetedFileConverter -in SpecLib_cons_openswath.tsv -out SpecLib_cons_openswath.TraML
+#omssa doesn't work because we have non-uniprot names in fasta
+# ommsa CSeqDBAliasNode::x_ResolveNames() - No alias or index file found for protein database
+## convert to mgf
+#for i in *mzXML
+#do
+#  bsub -J "mgf_convert" msconvert --mgf $i
+#done
+##OMSSA
+## convert to mgf
+#for i in *mgf
+#do
+#  j=$(basename $i .mgf)
+#  bsub -R "rusage[mem=20000,scratch=20000]" -J "omssa" -n 16 omssacl -nt 16 omssacl \
+#  -te 30 -teppm -tez 1 -to 1 -mv 1 -mf 3 -zl 1 -hl 5 -zh 6 -e 16 -i 1,4 -v 2 \
+#  -he 100000000000000000000 -is 0.0000000000000000000000000000000001 \
+#  -d HeLa_protgen_combined_1FPKM_reverse.fasta \
+#  -op $j.omssa.pep.xml \
+#  -fm $i
+#done
 
-bsub -n 8 -R "rusage[mem=4096,scratch=8192]" -W 24:00 -J "DecoyGenerator" -w "done(toTraML)" OpenSwathDecoyGenerator -in SpecLib_cons_openswath.TraML -out SpecLib_cons_openswath_decoys.TraML -threads 8
+# peptideProphet
+# comet
+bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM_comet" -w "done(comet)" \
+xinteract -dreverse_ -OARPd -Ninteract_1FPKM_comet heuselm*.comet.pep.xml
+# xTandem
+bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM_xtandem" \
+xinteract -dreverse_ -OARPd -Ninteract_1FPKM_xtandem heuselm*.tandem.pep.xml
 
-bsub -n 8 -R "rusage[mem=4096,scratch=8192]" -W 24:00 -J "conversion_to_pqp" -w "done(DecoyGenerator)" TargetedFileConverter -in SpecLib_cons_openswath_decoys.TraML -out SpecLib_cons_openswath_decoys.pqp -threads 8
+# iProphet
+bsub -R "rusage[mem=200000,scratch=200000]" -J "iprophet_1FPKM" \
+InterProphetParser DECOY=reverse_ *interact_1FPKM_comet.pep.xml *interact_1FPKM_xtandem.pep.xml iprophet_1FPKM_cometANDxtandem.pep.xml
+
+# Use only iProphet and not Mayu because we do not have a unique protein mapping, but isoforms
+# select iProphet FDR of 1%
+# Open iprophet_1FPKM_cometANDxtandem.pep.xml and select probability value for 1% error rate
+# <error_point error="0.0100" min_prob="0.5005" num_corr="1971382" num_incorr="19913"/>
+# Use 0.5005 as probability cutoff for spectrast
+probCutoff=`head -n 100 iprophet_1FPKM_cometANDxtandem.pep.xml | grep 'error="0.0100"' | grep -Po '.*min_prob="\K.*?(?=".*)'`
+echo $probCutoff
+
+# spectrast library creation and iRT normalization
+bsub -R "rusage[mem=200000,scratch=200000]" -J spectrast_irt \
+spectrast -cNSpecLib \
+-cICID-QTOF \
+-cf "Protein! ~ reverse_" \
+-cP$probCutoff \
+-c_IRTirtkit.txt \
+-c_IRR \
+iprophet_1FPKM_cometANDxtandem.pep.xml
+
+# spectrast consensus spectrum generation
+# bsub -R "rusage[mem=40000,scratch=40000]" -w "done(spectrast_irt)" -J spectrast_cons -W 24:00 \
+bsub -R "rusage[mem=200000,scratch=200000]" -J spectrast_cons -W 24:00 \
+spectrast -cNSpecLib_cons_all \
+-cICID-QTOF \
+-cAC \
+-cM \
+SpecLib.splib
+
+
+# exchange modifications from Xtandem to be conforming with OpenSWATH
+cp SpecLib_cons_all.mrm SpecLib_cons_all_unimod.mrm
+
+sed -i -e 's/n\[43\]/\(Acetyl\)./' \
+    -e 's/C\[160\]/C\(Carbamidomethyl\)/' \
+    -e 's/C\[143\]/\(Pyro-carbamidomethyl\)\.C/' \
+    -e 's/E\[111\]/(Glu->pyro-Glu).E/' \
+    -e 's/Q\[111\]/(Gln->pyro-Glu).Q/' \
+    SpecLib_cons_all_unimod.mrm
+
+# Import from SpectraST MRM and convert to TraML
+bsub -n 8 -R "rusage[mem=5000,scratch=5000]" -J toTraML \
+TargetedFileConverter \
+-in SpecLib_cons_all_unimod.mrm \
+-out transitionlist.TraML \
+-threads 8
+
+# Target assay generation
+bsub -n 8 -R "rusage[mem=4096,scratch=8192]" -J "AssayGenerator" -w "done(toTraML)" \
+OpenSwathAssayGenerator \
+-in transitionlist.TraML \
+-out transitionlist_optimized.TraML \
+-swath_windows_file swath64_withHeader.txt \
+-threads 8
+
+# Decoy generation
+bsub -n 8 -R "rusage[mem=4096,scratch=8192]" -J "DecoyGenerator" -w "done(AssayGenerator)" \
+OpenSwathDecoyGenerator \
+-in transitionlist_optimized.TraML \
+-out transitionlist_optimized_decoys.TraML \
+-method shuffle \
+-threads 8
+
+# convert to pqp format for OpenSWATH
+bsub -R "rusage[mem=4096,scratch=8192]" -J "conversion_to_pqp" -w "done(DecoyGenerator)" \
+TargetedFileConverter \
+-in transitionlist_optimized_decoys.TraML \
+-out transitionlist_optimized_decoys.pqp
+
+# convert target library to tsv for manual inspection and Skyline usage
+bsub -R "rusage[mem=4096,scratch=8192]" -J "conversion_to_csv" -w "done(DecoyGenerator)" \
+TargetedFileConverter \
+-in transitionlist_optimized_decoys.TraML \
+-out transitionlist_optimized_decoys.tsv

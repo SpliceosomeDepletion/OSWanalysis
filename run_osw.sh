@@ -57,7 +57,7 @@ IDs='20171222084719949-1361573 20171222124319906-1361608 20171222134820739-13616
 
 Temp_SWATH_DIR=/cluster/scratch/ibludau/PRPF8
 SWATH_results_DIR=~/mysonas/PRPF8/data/DIAsearch/output
-Library=../DDAsearch/SpecLib_cons_openswath_decoys.pqp
+Library=../DDAsearch/transitionlist_optimized_decoys.pqp
 iRT_Library=~/mysonas/libraries/hroest_DIA_iRT_201311.TraML
 
 for id in ${IDs}
@@ -66,7 +66,7 @@ do
   name=`echo ${file} | xargs -n 1 basename`
   Temp_DIR_filewise=${Temp_SWATH_DIR}/${name%.*.*}/
   mkdir -p ${Temp_DIR_filewise}
-  bsub -J OpenSwathWorkflow -n 8 -R "rusage[mem=16384,scratch=16384]" -W 24:00 \
+  bsub -J OpenSwathWorkflow -n 8 -R "rusage[mem=16384,scratch=16384]" -W 4:00 \
   OpenSwathWorkflow -min_upper_edge_dist 1 \
   -tr_irt ${iRT_Library} -tr ${Library} \
   -threads 8 -readOptions cache \
