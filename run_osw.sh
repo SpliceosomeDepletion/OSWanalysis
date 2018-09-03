@@ -55,6 +55,9 @@ IDs='20171222084719949-1361573 20171222124319906-1361608 20171222134820739-13616
 20180114234202413-1366286 20180115021502377-1366299 20180115043803166-1366318
 20180115071202458-1366341'
 
+# repeat jobs that ran into wall time
+IDs='20171223154120078-1361910 20180111045325321-1365624 20180111031324818-1365574'
+
 Temp_SWATH_DIR=/cluster/scratch/ibludau/PRPF8
 SWATH_results_DIR=~/mysonas/PRPF8/data/DIAsearch/output
 Library=../DDAsearch/transitionlist_optimized_decoys.pqp
@@ -66,7 +69,7 @@ do
   name=`echo ${file} | xargs -n 1 basename`
   Temp_DIR_filewise=${Temp_SWATH_DIR}/${name%.*.*}/
   mkdir -p ${Temp_DIR_filewise}
-  bsub -J OpenSwathWorkflow -n 8 -R "rusage[mem=16384,scratch=16384]" -W 4:00 \
+  bsub -J OpenSwathWorkflow -n 8 -R "rusage[mem=16384,scratch=16384]" -W 24:00 \
   OpenSwathWorkflow -min_upper_edge_dist 1 \
   -tr_irt ${iRT_Library} -tr ${Library} \
   -threads 8 -readOptions cache \

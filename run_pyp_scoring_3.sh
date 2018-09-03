@@ -1,17 +1,5 @@
 # load data from merge and scoring
-cp merged_for_scoring.osw $TMPDIR
-cp merged.osw $TMPDIR
-mv $TMPDIR/merged.osw $TMPDIR/merged_ms2.osw
-
-pyprophet score --in=$TMPDIR/merged_ms2.osw --apply_weights=$TMPDIR/merged_for_scoring.osw --level=ms2
-
-cp $TMPDIR/merged_ms2* .
-mv $TMPDIR/merged_ms2.osw $TMPDIR/merged_peptide.osw
-
-pyprophet peptide --in=$TMPDIR/merged_peptide.osw --context=experiment-wide \
-peptide --in=$TMPDIR/merged_peptide.osw --context=global
-
-cp $TMPDIR/merged_peptide* .
+cp merged_peptide.osw $TMPDIR
 mv $TMPDIR/merged_peptide.osw $TMPDIR/merged_peptide_export.osw
 
 pyprophet export --in=$TMPDIR/merged_peptide_export.osw \
