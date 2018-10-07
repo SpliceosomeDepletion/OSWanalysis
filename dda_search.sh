@@ -60,13 +60,14 @@ do
   bsub -R "rusage[mem=20000,scratch=20000]" -J "xtandem" -n 16 tandem $j.tandem.params
 done
 
+# wait
 #convert 2 pepxml
 for i in *mzXML
 do
   echo $i
   j=$(basename $i .mzXML)
   echo $j
-  bsub  -R "rusage[mem=20000,scratch=20000]" -J "xtrandem_convert" -w "done(xtandem)" Tandem2XML $j.tandem.xml $j.tandem.pep.xml
+  bsub  -R "rusage[mem=20000,scratch=20000]" -J "xtrandem_convert" Tandem2XML $j.tandem.xml $j.tandem.pep.xml
 done
 
 ### MSfragger doesn't work on our in-house converted files
@@ -106,11 +107,14 @@ done
 
 # peptideProphet
 # comet
-bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM_comet" -w "done(comet)" \
+bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM_comet" \
 xinteract -dreverse_ -OARPd -Ninteract_1FPKM_comet heuselm*.comet.pep.xml
+
 # xTandem
 bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM_xtandem" \
 xinteract -dreverse_ -OARPd -Ninteract_1FPKM_xtandem heuselm*.tandem.pep.xml
+
+# wait for both search engines to finish and look at output before running iProphet
 
 # iProphet
 bsub -R "rusage[mem=200000,scratch=200000]" -J "iprophet_1FPKM" \
@@ -128,7 +132,7 @@ echo $probCutoff
 bsub -R "rusage[mem=200000,scratch=200000]" -J spectrast_irt \
 spectrast -cNSpecLib \
 -cICID-QTOF \
--cf "Protein! ~ reverse_" \
+-cf 'Protein!~reverse_' \
 -cP$probCutoff \
 -c_IRTirtkit.txt \
 -c_IRR \
@@ -154,10 +158,19 @@ sed -i -e 's/n\[43\]/\(Acetyl\)./' \
     -e 's/Q\[111\]/(Gln->pyro-Glu).Q/' \
     SpecLib_cons_all_unimod.mrm
 
+# change ProteinName to ENSEMBL gene id
+# remove non-genotypic peptides
+module load new
+module load /cluster/apps/imsb/modules
+module load r/3.4.0
+module load mpfr
+module load open_mpi
+bsub -J genotypic_lib -R "rusage[mem=5000,scratch=5000]" -W 4:00 Rscript --vanilla ../OSWanalysis/generate_genotypic_library.R
+
 # Import from SpectraST MRM and convert to TraML
 bsub -n 8 -R "rusage[mem=5000,scratch=5000]" -J toTraML \
 TargetedFileConverter \
--in SpecLib_cons_all_unimod.mrm \
+-in SpecLib_cons_all_unimod_genotypic.mrm \
 -out transitionlist.TraML \
 -threads 8
 
@@ -175,6 +188,7 @@ OpenSwathDecoyGenerator \
 -in transitionlist_optimized.TraML \
 -out transitionlist_optimized_decoys.TraML \
 -method shuffle \
+-switchKR true \
 -threads 8
 
 # convert to pqp format for OpenSWATH

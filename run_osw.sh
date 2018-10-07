@@ -56,7 +56,7 @@ IDs='20171222084719949-1361573 20171222124319906-1361608 20171222134820739-13616
 20180115071202458-1366341'
 
 # repeat jobs that ran into wall time
-IDs='20171223154120078-1361910 20180111045325321-1365624 20180111031324818-1365574'
+#IDs='20171223154120078-1361910 20180111045325321-1365624 20180111031324818-1365574'
 
 Temp_SWATH_DIR=/cluster/scratch/ibludau/PRPF8
 SWATH_results_DIR=~/mysonas/PRPF8/data/DIAsearch/output
@@ -76,6 +76,7 @@ do
   -tempDirectory ${Temp_DIR_filewise} \
   -in ${file} -out_osw ${SWATH_results_DIR}/${name%.*.*}.osw \
   -out_chrom ${SWATH_results_DIR}/${name%.*.*}.chrom.mzML \
+  -mz_extraction_window 50 -ppm \
   -use_ms1_traces \
   -Scoring:stop_report_after_feature 5
 done
