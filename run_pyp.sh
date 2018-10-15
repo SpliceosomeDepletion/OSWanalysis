@@ -5,7 +5,6 @@ cd ${OUT_DIR}
 # merge and score input files
 # had to split merging and scoring, because otherwise cross validation gets stuck in scoring
 bsub -J pypMerge_for_scoring -R "rusage[mem=20000,scratch=20000]" -W 24:00 ../../OSWanalysis/run_pyp_merge_for_scoring.sh
-#bsub -J pypSubscoring -n 12 -w "done(pypMerge_for_scoring)" -R "rusage[mem=20000,scratch=20000]" -W 24:00 ../../OSWanalysis/run_pyp_subscoring.sh
 bsub -J pypSubscoring -n 12 -R "rusage[mem=5000,scratch=5000]" -W 4:00 ../../OSWanalysis/run_pyp_subscoring.sh
 
 # merge all files

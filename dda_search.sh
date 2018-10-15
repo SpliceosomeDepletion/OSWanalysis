@@ -43,7 +43,6 @@ done
 # run comet search
 for file in *mzXML
 do
-  #file=`ls ~/mysonas/html/openBIS/${id}/heuselm*.mzXML.gz`
   name=${file##*/}
   bsub -R "rusage[mem=200000,scratch=200000]" -J "comet" comet -PHeLa_protgen_combined_1FPKM_reverse_comet.params -N${name%.*}.comet ${file}
 done
@@ -70,41 +69,6 @@ do
   bsub  -R "rusage[mem=20000,scratch=20000]" -J "xtrandem_convert" Tandem2XML $j.tandem.xml $j.tandem.pep.xml
 done
 
-### MSfragger doesn't work on our in-house converted files
-### Effort of converting raw files again not worth it
-### Wenguang suggested to use OMSSA instead >> even more complementary to comet
-## msconvert
-#for i in *mzXML
-#do
-##msconvert --mzXML --outfile $(basename $i .mzXML)_msconvert  $i
-#msconvert $i
-#done
-## run MSfragger
-#for i in *.mzML
-#do
-#bsub -J "msfragger" -R "rusage[mem=200000,scratch=200000]" java -Xmx8G -jar ~/mysonas/MSFragger-20171106/MSFragger-20180316.jar fragger_HeLaProtgen.params $i
-#done
-
-#omssa doesn't work because we have non-uniprot names in fasta
-# ommsa CSeqDBAliasNode::x_ResolveNames() - No alias or index file found for protein database
-## convert to mgf
-#for i in *mzXML
-#do
-#  bsub -J "mgf_convert" msconvert --mgf $i
-#done
-##OMSSA
-## convert to mgf
-#for i in *mgf
-#do
-#  j=$(basename $i .mgf)
-#  bsub -R "rusage[mem=20000,scratch=20000]" -J "omssa" -n 16 omssacl -nt 16 omssacl \
-#  -te 30 -teppm -tez 1 -to 1 -mv 1 -mf 3 -zl 1 -hl 5 -zh 6 -e 16 -i 1,4 -v 2 \
-#  -he 100000000000000000000 -is 0.0000000000000000000000000000000001 \
-#  -d HeLa_protgen_combined_1FPKM_reverse.fasta \
-#  -op $j.omssa.pep.xml \
-#  -fm $i
-#done
-
 # peptideProphet
 # comet
 bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM_comet" \
@@ -120,11 +84,7 @@ xinteract -dreverse_ -OARPd -Ninteract_1FPKM_xtandem heuselm*.tandem.pep.xml
 bsub -R "rusage[mem=200000,scratch=200000]" -J "iprophet_1FPKM" \
 InterProphetParser DECOY=reverse_ *interact_1FPKM_comet.pep.xml *interact_1FPKM_xtandem.pep.xml iprophet_1FPKM_cometANDxtandem.pep.xml
 
-# Use only iProphet and not Mayu because we do not have a unique protein mapping, but isoforms
-# select iProphet FDR of 1%
-# Open iprophet_1FPKM_cometANDxtandem.pep.xml and select probability value for 1% error rate
-# <error_point error="0.0100" min_prob="0.5005" num_corr="1971382" num_incorr="19913"/>
-# Use 0.5005 as probability cutoff for spectrast
+# use iProphet peptide FDR of 1%
 probCutoff=`head -n 100 iprophet_1FPKM_cometANDxtandem.pep.xml | grep 'error="0.0100"' | grep -Po '.*min_prob="\K.*?(?=".*)'`
 echo $probCutoff
 
@@ -139,14 +99,12 @@ spectrast -cNSpecLib \
 iprophet_1FPKM_cometANDxtandem.pep.xml
 
 # spectrast consensus spectrum generation
-# bsub -R "rusage[mem=40000,scratch=40000]" -w "done(spectrast_irt)" -J spectrast_cons -W 24:00 \
 bsub -R "rusage[mem=200000,scratch=200000]" -J spectrast_cons -W 24:00 \
 spectrast -cNSpecLib_cons_all \
 -cICID-QTOF \
 -cAC \
 -cM \
 SpecLib.splib
-
 
 # exchange modifications from Xtandem to be conforming with OpenSWATH
 cp SpecLib_cons_all.mrm SpecLib_cons_all_unimod.mrm
