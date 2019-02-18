@@ -41,10 +41,12 @@ do
 done
 
 # run comet search
+cp ../databaseComparison/PRPF8_protgen_combined_1FPKM_reverse.fasta .
+cp ../databaseComparison/PRPF8_protgen_combined_1FPKM_reverse_comet.params .
 for file in *mzXML
 do
   name=${file##*/}
-  bsub -R "rusage[mem=200000,scratch=200000]" -J "comet" comet -PHeLa_protgen_combined_1FPKM_reverse_comet.params -N${name%.*}.comet ${file}
+  bsub -R "rusage[mem=200000,scratch=200000]" -J "comet" comet -PPRPF8_protgen_combined_1FPKM_reverse_comet.params -N${name%.*}.comet ${file}
 done
 
 # run Xtandem search
@@ -53,7 +55,7 @@ do
   echo $i
   j=$(basename $i .mzXML)
   echo $j
-  cp input_HeLaprotgen_5600_native_semi.xml $j.tandem.params
+  cp input_PRPF8_protgen_combined_1FPKM_5600_native_semi.xml $j.tandem.params
   sed -i -e "s/input_file_name/$i/g" $j.tandem.params
   sed -i -e "s/output_file_name/$j.tandem.xml/g" $j.tandem.params
   bsub -R "rusage[mem=20000,scratch=20000]" -J "xtandem" -n 16 tandem $j.tandem.params
