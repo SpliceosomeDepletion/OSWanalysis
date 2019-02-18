@@ -43,3 +43,15 @@ bsub -R "rusage[mem=20000,scratch=20000]" -J "xinteract_1FPKM" xinteract -drever
 bsub -R "rusage[mem=20000,scratch=20000]" -J "xinteract_trembl" xinteract -dreverse_ -OARPd -Ninteract_trembl uniprot_human_trembl_iRTcrap_reverse_comet*.pep.xml
 bsub -R "rusage[mem=20000,scratch=20000]" -J "xinteract_sprot_variants" xinteract -dreverse_ -OARPd -Ninteract_sprot_variants uniprot_human_sprot_variants_iRTcrap_reverse_comet*.pep.xml
 bsub -R "rusage[mem=20000,scratch=20000]" -J "xinteract_sprot_canonical" xinteract -dreverse_ -OARPd -Ninteract_sprot_canonical uniprot_human_sprot_canonical_iRTcrap_reverse_comet*.pep.xml
+
+# write PSM counts in summary file
+echo "file fdr psm_count" > psm_summary.txt
+for file in interact-interact_*.pep.xml
+do
+  psmCount_1fdr=`head -n 100 ${file} | grep 'error="0.0100"' | grep -Po '.*num_corr="\K.*?(?=".*)'`
+  psmCount_5fdr=`head -n 100 ${file} | grep 'error="0.0500"' | grep -Po '.*num_corr="\K.*?(?=".*)'`
+  psmCount_10fdr=`head -n 100 ${file} | grep 'error="0.1000"' | grep -Po '.*num_corr="\K.*?(?=".*)'`
+  echo "${file} 0.01 ${psmCount_1fdr}" >> psm_summary.txt
+  echo "${file} 0.05 ${psmCount_5fdr}" >> psm_summary.txt
+  echo "${file} 0.10 ${psmCount_10fdr}" >> psm_summary.txt
+done
