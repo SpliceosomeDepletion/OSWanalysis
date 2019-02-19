@@ -58,7 +58,7 @@ do
   cp input_PRPF8_protgen_combined_1FPKM_5600_native_semi.xml $j.tandem.params
   sed -i -e "s/input_file_name/$i/g" $j.tandem.params
   sed -i -e "s/output_file_name/$j.tandem.xml/g" $j.tandem.params
-  bsub -R "rusage[mem=20000,scratch=20000]" -J "xtandem" -n 16 tandem $j.tandem.params
+  bsub -R "rusage[mem=20000,scratch=20000]" -W 24:00 -J "xtandem" -n 1 tandem $j.tandem.params
 done
 
 # wait
@@ -73,17 +73,17 @@ done
 
 # peptideProphet
 # comet
-bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM_comet" \
+bsub -R "rusage[mem=200000,scratch=200000]" -W 24:00 -J "xinteract_1FPKM_comet" \
 xinteract -dreverse_ -OARPd -Ninteract_1FPKM_comet heuselm*.comet.pep.xml
 
 # xTandem
-bsub -R "rusage[mem=200000,scratch=200000]" -J "xinteract_1FPKM_xtandem" \
+bsub -R "rusage[mem=200000,scratch=200000]" -W 24:00 -J "xinteract_1FPKM_xtandem" \
 xinteract -dreverse_ -OARPd -Ninteract_1FPKM_xtandem heuselm*.tandem.pep.xml
 
 # wait for both search engines to finish and look at output before running iProphet
 
 # iProphet
-bsub -R "rusage[mem=200000,scratch=200000]" -J "iprophet_1FPKM" \
+bsub -R "rusage[mem=200000,scratch=200000]" -W 24:00 -J "iprophet_1FPKM" \
 InterProphetParser DECOY=reverse_ *interact_1FPKM_comet.pep.xml *interact_1FPKM_xtandem.pep.xml iprophet_1FPKM_cometANDxtandem.pep.xml
 
 # use iProphet peptide FDR of 1%
