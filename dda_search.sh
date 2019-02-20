@@ -162,3 +162,6 @@ bsub -R "rusage[mem=4096,scratch=8192]" -J "conversion_to_csv" -w "done(DecoyGen
 TargetedFileConverter \
 -in transitionlist_optimized_decoys.TraML \
 -out transitionlist_optimized_decoys.tsv
+
+# write summary table for the spectral library
+bsub -J summary -R "rusage[mem=5000,scratch=5000]" -W 4:00 Rscript --vanilla ../OSWanalysis/get_library_summary.R

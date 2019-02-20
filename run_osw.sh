@@ -59,6 +59,7 @@ Temp_SWATH_DIR=/cluster/scratch/ibludau/PRPF8
 SWATH_results_DIR=~/mysonas/PRPF8/data/DIAsearch/output
 Library=../DDAsearch/transitionlist_optimized_decoys.pqp
 iRT_Library=~/mysonas/libraries/hroest_DIA_iRT_201311.TraML
+mkdir -p ${SWATH_results_DIR}
 
 for id in ${IDs}
 do

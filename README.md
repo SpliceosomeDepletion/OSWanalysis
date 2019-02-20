@@ -1,10 +1,13 @@
 # OSWanalysis
 
+## Database comparison
+For performing a comparison between different protein sequence databases run 'run_DB_comparison.sh'.
+
 ## Library generation
-For library generation run 'dda_search.sh'
+For library generation run 'dda_search.sh'.
 
 ## OpenSWATH
-For the OpenSwathWorkflow run 'run_osw.sh'
+For the OpenSwathWorkflow run 'run_osw.sh'.
 
 ## PyProphet
 For PyProphet run 'run_pyp.sh'. This includes following steps:
