@@ -21,6 +21,6 @@ feature_alignment.py \
 --mst:useRTCorrection True \
 --mst:Stdev_multiplier 3.0 \
 --target_fdr -1 \
---fdr_cutoff 0.01 \
+--fdr_cutoff 0.05 \
 --max_fdr_quality 0.1 \
 --alignment_score 0.01
