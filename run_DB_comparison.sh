@@ -63,3 +63,7 @@ module load r/3.4.0
 module load mpfr
 module load open_mpi
 bsub -J psm_summary -R "rusage[mem=5000,scratch=5000]" -W 4:00 Rscript --vanilla ../OSWanalysis/get_psm_summary_plots.R
+
+cat PRPF8_protgen_combined_1FPKM.fasta | grep ">" > PRPF8_protgen_combined_1FPKM_ids.txt
+
+bsub -J psm_summary -R "rusage[mem=5000,scratch=5000]" -W 4:00 Rscript --vanilla ../OSWanalysis/get_fasta_comparison.R
